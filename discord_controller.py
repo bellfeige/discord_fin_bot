@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 import re
 from datetime import datetime, timedelta, time
 from urllib import parse, request
@@ -8,6 +7,7 @@ from urllib import parse, request
 import discord
 import pytz
 from discord.ext import commands
+from finviz import Finviz
 
 bot = commands.Bot(command_prefix='>', description="This is a Helper Bot")
 
@@ -64,7 +64,6 @@ async def on_message(message):
 
 @bot.command()
 async def finviz(ctx, arg):
-    from finviz import Finviz
     if arg == "map":
         map_img = Finviz.snp500_map()
         await ctx.send(map_img)
@@ -87,7 +86,9 @@ async def called_once_a_day():
     await bot.wait_until_ready()
     message_channel = bot.get_channel(target_channel_id)
     print(f"Got channel {message_channel}")
-    await message_channel.send("Your timed message")
+    print(f"Sending finviz scheduled map")
+    map_img = Finviz.snp500_map()
+    await message_channel.send(map_img)
 
 
 async def background_task():
@@ -107,12 +108,6 @@ async def background_task():
         tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
         await asyncio.sleep(seconds)  # Sleep until tomorrow and then the loop will start a new iteration
-
-
-# @called_once_a_day.before_loop
-# async def before():
-#     await bot.wait_until_ready()
-#     print("Finished waiting")
 
 
 if __name__ == '__main__':
