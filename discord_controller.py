@@ -6,7 +6,6 @@ from urllib import parse, request
 import re
 import json
 
-TOKEN = ""
 bot = commands.Bot(command_prefix='>', description="This is a Helper Bot")
 
 
@@ -48,7 +47,7 @@ async def youtube(ctx, *, search):
 # Events
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=discord.Streaming(name="Tutorials", url="http://www.twitch.tv/accountname"))
+    # await bot.change_presence(activity=discord.Streaming(name="Tutorials", url="http://www.twitch.tv/accountname"))
     print('My Ready is Body')
 
 
@@ -60,4 +59,25 @@ async def on_message(message):
         await bot.process_commands(message)
 
 
-bot.run('token')
+@bot.command()
+async def finviz(ctx, arg):
+    from finviz import Finviz
+    if arg == "map":
+        map_img = Finviz.snp500_map()
+        await ctx.send(map_img)
+    else:
+        await ctx.send("working on it")
+
+
+@bot.command()
+async def test(ctx, *args):
+    await ctx.send('{} arguments: {}'.format(len(args), ', '.join(args)))
+
+
+if __name__ == '__main__':
+    with open('config.json') as f:
+        config = json.load(f)
+
+    TOKEN = config["token"][config["env"]]
+
+    bot.run(TOKEN)
