@@ -1,0 +1,9 @@
+{
+  "token": {
+    "dev": "devToken",
+    "qa": "qaToken",
+    "prd": "prdToken"
+  },
+  "env": "dev",
+  "debug": 1
+}
