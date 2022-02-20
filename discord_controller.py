@@ -1,10 +1,13 @@
-import discord
-from discord.ext import commands
-import datetime
-
-from urllib import parse, request
-import re
+import asyncio
 import json
+import os
+import re
+from datetime import datetime, timedelta, time
+from urllib import parse, request
+
+import discord
+import pytz
+from discord.ext import commands
 
 bot = commands.Bot(command_prefix='>', description="This is a Helper Bot")
 
@@ -22,7 +25,7 @@ async def sum(ctx, numOne: int, numTwo: int):
 @bot.command()
 async def info(ctx):
     embed = discord.Embed(title=f"{ctx.guild.name}", description="Lorem Ipsum asdasd",
-                          timestamp=datetime.datetime.utcnow(), color=discord.Color.blue())
+                          timestamp=datetime.utcnow(), color=discord.Color.blue())
     embed.add_field(name="Server created at", value=f"{ctx.guild.created_at}")
     embed.add_field(name="Server Owner", value=f"{ctx.guild.owner}")
     embed.add_field(name="Server Region", value=f"{ctx.guild.region}")
@@ -74,10 +77,50 @@ async def test(ctx, *args):
     await ctx.send('{} arguments: {}'.format(len(args), ', '.join(args)))
 
 
+target_channel_id = 944463868128813097
+WHEN = time(21, 15, 0)  # UTC is default
+print(WHEN)
+
+
+# @tasks.loop(seconds=5)
+async def called_once_a_day():
+    await bot.wait_until_ready()
+    message_channel = bot.get_channel(target_channel_id)
+    print(f"Got channel {message_channel}")
+    await message_channel.send("Your timed message")
+
+
+async def background_task():
+    now = datetime.utcnow()
+    if now.time() > WHEN:  # Make sure loop doesn't start after {WHEN} as then it will send immediately the first time as negative seconds will make the sleep yield instantly
+        tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
+        seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
+        print(f"seconds = {seconds}")
+        await asyncio.sleep(seconds)  # Sleep until tomorrow and then the loop will start
+    while True:
+        now = datetime.utcnow()  # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
+        target_time = datetime.combine(now.date(), WHEN)  # 6:00 PM today (In UTC)
+        seconds_until_target = (target_time - now).total_seconds()
+        print(f"seconds_until_target = {seconds_until_target}")
+        await asyncio.sleep(seconds_until_target)  # Sleep until we hit the target time
+        await called_once_a_day()  # Call the helper function that sends the message
+        tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
+        seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
+        await asyncio.sleep(seconds)  # Sleep until tomorrow and then the loop will start a new iteration
+
+
+# @called_once_a_day.before_loop
+# async def before():
+#     await bot.wait_until_ready()
+#     print("Finished waiting")
+
+
 if __name__ == '__main__':
     with open('config.json') as f:
         config = json.load(f)
 
     TOKEN = config["token"][config["env"]]
 
+    # called_once_a_day.start()
+    bot.loop.create_task(background_task())
     bot.run(TOKEN)
